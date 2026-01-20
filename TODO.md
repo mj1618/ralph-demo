@@ -56,7 +56,7 @@ Build a fast, Excel-like spreadsheet app that runs entirely in the browser (with
   - Insert/delete rows/columns
   - Resize rows/columns, freeze header row/column
 - **Formatting**
-  - More formats: currency, percent, date
+  - [x] More formats: currency, percent, date
   - Conditional formatting (basic rules)
 - **Import/export**
   - [x] Better CSV import (delimiter detection, quoting)

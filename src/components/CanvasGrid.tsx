@@ -38,6 +38,7 @@ type CellFormat = {
   bold?: boolean
   italic?: boolean
   align?: 'left' | 'center' | 'right'
+  numberFormat?: 'currency' | 'percent' | 'date'
 }
 
 const GRID_CONFIG = {
@@ -60,6 +61,21 @@ const TEXT_STYLES = {
   fontFamily: '"Inter", system-ui, sans-serif',
   paddingX: 8,
 }
+
+const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+})
+const PERCENT_FORMATTER = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 2,
+})
+const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+})
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -89,8 +105,14 @@ function normalizeFormat(format: CellFormat) {
     bold: Boolean(format.bold),
     italic: Boolean(format.italic),
     align: format.align ?? 'left',
+    numberFormat: format.numberFormat,
   }
-  if (!normalized.bold && !normalized.italic && normalized.align === 'left') {
+  if (
+    !normalized.bold &&
+    !normalized.italic &&
+    normalized.align === 'left' &&
+    !normalized.numberFormat
+  ) {
     return null
   }
   return normalized
@@ -106,6 +128,35 @@ function getCellAlign(format: CellFormat | undefined): CanvasTextAlign {
   return format?.align ?? 'left'
 }
 
+function parseNumber(value: string) {
+  if (value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatCellValue(value: string, format: CellFormat | undefined) {
+  const numberFormat = format?.numberFormat
+  if (!numberFormat) return value
+  if (value.startsWith('#')) return value
+  if (numberFormat === 'currency') {
+    const numeric = parseNumber(value)
+    if (numeric === null) return value
+    return CURRENCY_FORMATTER.format(numeric)
+  }
+  if (numberFormat === 'percent') {
+    const numeric = parseNumber(value)
+    if (numeric === null) return value
+    return PERCENT_FORMATTER.format(numeric)
+  }
+  if (numberFormat === 'date') {
+    const numeric = parseNumber(value)
+    const date = numeric === null ? new Date(value) : new Date(numeric)
+    if (Number.isNaN(date.getTime())) return value
+    return DATE_FORMATTER.format(date)
+  }
+  return value
+}
+
 export type CanvasGridHandle = {
   resetWorkbook: () => void
   exportCsv: () => void
@@ -113,6 +164,7 @@ export type CanvasGridHandle = {
   toggleBold: () => void
   toggleItalic: () => void
   setAlignment: (align: 'left' | 'center' | 'right') => void
+  setNumberFormat: (format: 'currency' | 'percent' | 'date') => void
 }
 
 const CanvasGrid = forwardRef<CanvasGridHandle>(function CanvasGrid(_, ref) {
@@ -247,6 +299,7 @@ const CanvasGrid = forwardRef<CanvasGridHandle>(function CanvasGrid(_, ref) {
         if (!value) continue
 
         const format = formatsRef.current.get(key)
+        const displayValue = formatCellValue(value, format)
         const font = getCellFont(format)
         const align = getCellAlign(format)
         if (font !== lastFont) {
@@ -266,7 +319,7 @@ const CanvasGrid = forwardRef<CanvasGridHandle>(function CanvasGrid(_, ref) {
             : align === 'right'
               ? cellLeft + GRID_CONFIG.cellWidth - TEXT_STYLES.paddingX
               : cellLeft + TEXT_STYLES.paddingX
-        ctx.fillText(value, textX, textY, GRID_CONFIG.cellWidth - TEXT_STYLES.paddingX * 2)
+        ctx.fillText(displayValue, textX, textY, GRID_CONFIG.cellWidth - TEXT_STYLES.paddingX * 2)
       }
     }
   }, [])
@@ -448,6 +501,24 @@ const CanvasGrid = forwardRef<CanvasGridHandle>(function CanvasGrid(_, ref) {
           const updated = normalizeFormat({
             ...next.get(key),
             align,
+          })
+          if (updated) {
+            next.set(key, updated)
+          } else {
+            next.delete(key)
+          }
+          return next
+        })
+      },
+      setNumberFormat: (format) => {
+        const { focusRow, focusCol } = selectionRef.current
+        const key = getCellKey(focusRow, focusCol)
+        setFormats((prev) => {
+          const next = new Map(prev)
+          const current = next.get(key)
+          const updated = normalizeFormat({
+            ...current,
+            numberFormat: current?.numberFormat === format ? undefined : format,
           })
           if (updated) {
             next.set(key, updated)

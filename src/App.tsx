@@ -62,6 +62,33 @@ function App() {
           <button
             className="toolbar__button"
             type="button"
+            onClick={() => gridRef.current?.setNumberFormat('currency')}
+            aria-label="Format as currency"
+            title="Currency"
+          >
+            $
+          </button>
+          <button
+            className="toolbar__button"
+            type="button"
+            onClick={() => gridRef.current?.setNumberFormat('percent')}
+            aria-label="Format as percent"
+            title="Percent"
+          >
+            %
+          </button>
+          <button
+            className="toolbar__button"
+            type="button"
+            onClick={() => gridRef.current?.setNumberFormat('date')}
+            aria-label="Format as date"
+            title="Date"
+          >
+            Date
+          </button>
+          <button
+            className="toolbar__button"
+            type="button"
             onClick={() => gridRef.current?.resetWorkbook()}
           >
             New

@@ -157,6 +157,12 @@ function parseCsv(text: string, delimiter: string) {
   return state.rows
 }
 
+export function parseDelimitedText(text: string) {
+  if (text.trim() === '') return []
+  const delimiter = detectDelimiter(text)
+  return parseCsv(text, delimiter)
+}
+
 export function csvToCells(text: string, maxRows: number, maxCols: number) {
   const delimiter = detectDelimiter(text)
   const rows = parseCsv(text, delimiter)
