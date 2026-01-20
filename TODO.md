@@ -88,6 +88,6 @@ Build a fast, Excel-like spreadsheet app that runs entirely in the browser (with
 - [x] **Cell edit overlay**: controlled input positioned over selected cell; commit/cancel logic.
 - [x] **Data model & undo/redo**: sparse cell store + action stack.
 - **Formula engine v0**: parse + eval + dependency graph + recalc.
-- **Persistence**: IndexedDB save/load + export/import CSV.
+- [x] **Persistence**: IndexedDB save/load + export/import CSV.
 - **Smoke tests**: Vitest for formulas; Playwright for core edit/navigate/copy-paste.
 

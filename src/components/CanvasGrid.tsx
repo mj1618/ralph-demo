@@ -1,11 +1,16 @@
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type KeyboardEvent,
   type PointerEvent,
 } from 'react'
+import { getCellKey } from '../utils/cellKey'
+import { cellsToCsv, csvToCells } from '../utils/csv'
+import { clearWorkbook, loadWorkbook, saveWorkbook } from '../utils/persistence'
 
 type GridSelection = {
   row: number
@@ -53,11 +58,13 @@ function getVisibleRange(
   return { start, end }
 }
 
-function getCellKey(row: number, col: number) {
-  return `${row}:${col}`
+export type CanvasGridHandle = {
+  resetWorkbook: () => void
+  exportCsv: () => void
+  importCsvFile: (file: File) => Promise<void>
 }
 
-export default function CanvasGrid() {
+const CanvasGrid = forwardRef<CanvasGridHandle>(function CanvasGrid(_, ref) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const editorRef = useRef<HTMLInputElement | null>(null)
@@ -67,6 +74,8 @@ export default function CanvasGrid() {
   const [, setUndoStack] = useState<HistoryEntry[]>([])
   const [, setRedoStack] = useState<HistoryEntry[]>([])
   const frameRef = useRef<number | null>(null)
+  const hasLoadedRef = useRef(false)
+  const saveTimeoutRef = useRef<number | null>(null)
   const [selection, setSelection] = useState<GridSelection>({ row: 0, col: 0 })
   const [editingCell, setEditingCell] = useState<GridSelection | null>(null)
   const [draftValue, setDraftValue] = useState('')
@@ -213,10 +222,92 @@ export default function CanvasGrid() {
   }, [cells, scheduleDraw])
 
   useEffect(() => {
+    let isActive = true
+    loadWorkbook()
+      .then((loaded) => {
+        if (!isActive) return
+        if (loaded) {
+          setCells(loaded)
+        }
+        setUndoStack([])
+        setRedoStack([])
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isActive) {
+          hasLoadedRef.current = true
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasLoadedRef.current) return () => {}
+    if (saveTimeoutRef.current !== null) {
+      window.clearTimeout(saveTimeoutRef.current)
+    }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      saveWorkbook(cells).catch(() => {})
+    }, 400)
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        window.clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [cells])
+
+  useEffect(() => {
     if (!editingCell) return
     const handle = window.requestAnimationFrame(() => editorRef.current?.focus())
     return () => window.cancelAnimationFrame(handle)
   }, [editingCell])
+
+  const resetWorkbook = useCallback(() => {
+    setCells(new Map())
+    setUndoStack([])
+    setRedoStack([])
+    setSelection({ row: 0, col: 0 })
+    setEditingCell(null)
+    setDraftValue('')
+    clearWorkbook().catch(() => {})
+  }, [])
+
+  const exportCsv = useCallback(() => {
+    const csv = cellsToCsv(cellsRef.current)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'ralph-workbook.csv'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const importCsvFile = useCallback(async (file: File) => {
+    const text = await file.text()
+    const nextCells = csvToCells(text, GRID_CONFIG.rows, GRID_CONFIG.cols)
+    setCells(nextCells)
+    setUndoStack([])
+    setRedoStack([])
+    setSelection({ row: 0, col: 0 })
+    setEditingCell(null)
+    setDraftValue('')
+  }, [])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      resetWorkbook,
+      exportCsv,
+      importCsvFile,
+    }),
+    [exportCsv, importCsvFile, resetWorkbook],
+  )
 
   const beginEdit = useCallback((cell: GridSelection) => {
     const currentValue = cellsRef.current.get(getCellKey(cell.row, cell.col)) ?? ''
@@ -386,4 +477,6 @@ export default function CanvasGrid() {
       ) : null}
     </div>
   )
-}
+})
+
+export default CanvasGrid
