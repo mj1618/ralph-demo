@@ -42,7 +42,7 @@ Build a fast, Excel-like spreadsheet app that runs entirely in the browser (with
 - **Tests (keep it light but real)**
   - [x] Unit tests for formula parser/evaluator and dependency graph
   - A small set of Playwright tests:
-    - Edit cell, navigate, undo/redo
+    - [x] Edit cell, navigate, undo/redo
     - [x] Simple formula recalc when precedent changes
   - [x] Copy/paste a 3x3 TSV block into grid
 

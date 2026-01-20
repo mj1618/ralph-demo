@@ -4,6 +4,7 @@ test('edit a cell and undo/redo changes', async ({ page }) => {
   await page.goto('/')
 
   const grid = page.locator('.grid-scroll-container')
+  const selectionMeta = page.locator('.grid-selection-meta')
   await expect(grid).toBeVisible()
 
   const bounds = await grid.boundingBox()
@@ -11,31 +12,55 @@ test('edit a cell and undo/redo changes', async ({ page }) => {
     throw new Error('Grid container is not visible')
   }
 
-  const cellPoint = { x: bounds.x + 10, y: bounds.y + 10 }
+  const cellWidth = 120
+  const cellHeight = 32
+  const padding = 10
   const editor = page.locator('.cell-editor')
 
-  await page.mouse.dblclick(cellPoint.x, cellPoint.y)
-  await expect(editor).toHaveCount(1)
-  await editor.fill('123')
-  await page.mouse.click(cellPoint.x, cellPoint.y)
-  await expect(editor).toHaveCount(0)
+  const cellPoint = (row: number, col: number) => ({
+    x: bounds.x + padding + col * cellWidth,
+    y: bounds.y + padding + row * cellHeight,
+  })
 
-  await page.mouse.dblclick(cellPoint.x, cellPoint.y)
-  await expect(editor).toHaveValue('123')
-  await page.mouse.click(cellPoint.x, cellPoint.y)
+  const setCell = async (row: number, col: number, value: string) => {
+    const point = cellPoint(row, col)
+    await page.mouse.dblclick(point.x, point.y)
+    await expect(editor).toHaveCount(1)
+    await editor.fill(value)
+    const commitPoint = cellPoint(row + 1, col)
+    await page.mouse.click(commitPoint.x, commitPoint.y)
+    await expect(editor).toHaveCount(0)
+  }
 
-  await page.mouse.click(cellPoint.x, cellPoint.y)
+  const selectCell = async (row: number, col: number) => {
+    const point = cellPoint(row, col)
+    await page.mouse.click(point.x, point.y)
+  }
+
+  await setCell(0, 0, '123')
+  await setCell(0, 1, '456')
+
+  await selectCell(0, 0)
+  await expect(selectionMeta).toHaveAttribute('data-selected-display', '123')
+  await page.keyboard.press('ArrowRight')
+  await expect(selectionMeta).toHaveAttribute('data-selected-display', '456')
+  await page.keyboard.press('ArrowLeft')
+  await expect(selectionMeta).toHaveAttribute('data-selected-display', '123')
+
+  await selectCell(0, 1)
   const undoShortcut = process.platform === 'darwin' ? 'Meta+Z' : 'Control+Z'
   await page.keyboard.press(undoShortcut)
 
-  await page.mouse.dblclick(cellPoint.x, cellPoint.y)
+  const b1 = cellPoint(0, 1)
+  await page.mouse.dblclick(b1.x, b1.y)
   await expect(editor).toHaveValue('')
-  await page.mouse.click(cellPoint.x, cellPoint.y)
+  const b1Commit = cellPoint(1, 1)
+  await page.mouse.click(b1Commit.x, b1Commit.y)
 
   const redoShortcut = process.platform === 'darwin' ? 'Meta+Shift+Z' : 'Control+Y'
   await page.keyboard.press(redoShortcut)
-  await page.mouse.dblclick(cellPoint.x, cellPoint.y)
-  await expect(editor).toHaveValue('123')
+  await page.mouse.dblclick(b1.x, b1.y)
+  await expect(editor).toHaveValue('456')
 })
 
 test('recalculate formula when precedent changes', async ({ page }) => {
