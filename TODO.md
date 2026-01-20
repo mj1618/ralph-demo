@@ -34,7 +34,7 @@ Build a fast, Excel-like spreadsheet app that runs entirely in the browser (with
   - Implement functions: `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`
   - Recalc dependency graph (topological order), cycle detection
 - **Formatting (minimum)**
-  - Number vs text handling
+- [x] Number vs text handling
   - Basic cell formatting: bold/italic, alignment (optional in Phase 1)
 - **Persistence**
   - Save/load workbook to IndexedDB automatically

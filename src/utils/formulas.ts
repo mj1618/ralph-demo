@@ -403,7 +403,7 @@ export function calculateDisplayCells(cells: Map<string, string>) {
 
   for (const [key, value] of cells.entries()) {
     if (!value.startsWith('=')) {
-      display.set(key, value)
+      display.set(key, value.startsWith("'") ? value.slice(1) : value)
       continue
     }
     const tokens = tokenize(value.slice(1))
