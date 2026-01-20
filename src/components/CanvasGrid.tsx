@@ -437,6 +437,37 @@ const CanvasGrid = forwardRef<CanvasGridHandle>(function CanvasGrid(_, ref) {
         beginEdit(selection)
       }
     }
+    if (!editingCell) {
+      const move = (rowDelta: number, colDelta: number) => {
+        const nextRow = clamp(selection.row + rowDelta, 0, GRID_CONFIG.rows - 1)
+        const nextCol = clamp(selection.col + colDelta, 0, GRID_CONFIG.cols - 1)
+        setSelection({ row: nextRow, col: nextCol })
+      }
+      switch (event.key) {
+        case 'ArrowUp':
+          event.preventDefault()
+          move(-1, 0)
+          return
+        case 'ArrowDown':
+          event.preventDefault()
+          move(1, 0)
+          return
+        case 'ArrowLeft':
+          event.preventDefault()
+          move(0, -1)
+          return
+        case 'ArrowRight':
+          event.preventDefault()
+          move(0, 1)
+          return
+        case 'Tab': {
+          event.preventDefault()
+          const direction = event.shiftKey ? -1 : 1
+          move(0, direction)
+          return
+        }
+      }
+    }
     if (event.key === 'Escape' && editingCell) {
       event.preventDefault()
       cancelEdit()
