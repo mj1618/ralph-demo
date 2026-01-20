@@ -11,14 +11,11 @@ cleanup() {
 trap cleanup SIGINT
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)"
-PARSER="${ROOT_DIR}/.scripts/pretty-log-line.js"
-
-echo "Conversion started"
 
 for i in $(seq 1 30); do
   # Run agent and pretty-print each line to stdout via node parser
   agent --model gpt-5.2-codex --output-format stream-json --stream-partial-output --sandbox disabled --print --force "$(cat "${ROOT_DIR}/.seed/RALPH.md")" \
     2>&1 \
-    | node "${PARSER}"
+    | node -e "$(cat ./.scripts/pretty-log-line.js)"
 done
 

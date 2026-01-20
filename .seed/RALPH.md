@@ -5,3 +5,5 @@ When done, update the TODO.md accordingly.
 Test your changes but not too much.
 
 Only do ONE task and then exit.
+
+Git commit and push right at the end.
