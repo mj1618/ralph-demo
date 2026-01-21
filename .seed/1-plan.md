@@ -2,4 +2,5 @@ I need you to plan an application to build. It's going to be like Excel - but in
 
 You decide the best tech stack and tools. It must include tests of functionality, but don't focus on it too much.
 
-Write the plan to TODO.md and then finish.
+Split the plan up into files that go in todo/*.pending.md and note down the dependencies between the tasks so that you know what needs to come first.
+
