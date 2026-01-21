@@ -17,7 +17,7 @@ for i in $(seq 1 10000); do
   # NOTE: With `set -euo pipefail`, a failure in either `agent` or `node -e` would
   # abort the entire script. We want to continue the loop instead.
   set +e
-  agent --model gpt-5.2-codex --output-format stream-json --stream-partial-output --sandbox disabled --print --force "$(cat "${ROOT_DIR}/.seed/RALPH.md")" \
+  agent --model gpt-5.2-codex --output-format stream-json --stream-partial-output --sandbox disabled --browser --print --force "$(cat "${ROOT_DIR}/.seed/RALPH.md")" \
     2>&1 \
     | node -e "$(cat ./.scripts/pretty-log-line.js)"
   status=$?
